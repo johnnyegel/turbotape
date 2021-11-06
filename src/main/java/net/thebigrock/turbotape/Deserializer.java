@@ -6,7 +6,7 @@ import java.io.InputStream;
 /**
  * Interface defining the method provided by an Object deserializer
  */
-public interface ObjectDeserializer {
+public interface Deserializer {
     /**
      * Deserializes the specified object from the given input stream
      * @param cls The class of the object to deserialize

@@ -1,5 +1,6 @@
 package net.thebigrock.turbotape;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
@@ -20,11 +21,18 @@ public interface FieldWriter {
     }
 
     /**
+     * Write a boolean value
+     * @param value The value
+     * @return Allocator for the field
+     */
+    Allocator write(boolean value);
+
+    /**
      * Write an integer value
      * @param value The value
      * @return Allocator for the field
      */
-    Allocator write(int value);
+    Allocator write(int value) throws IOException;
 
     /**
      * Write a long value

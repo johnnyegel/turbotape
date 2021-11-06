@@ -37,6 +37,12 @@ public interface FieldReader {
     FieldReader as(String name);
 
     /**
+     * Reads boolean from serializer
+     * @return Read value
+     */
+    int readBool();
+
+    /**
      * Reads integer from serializer
      * @return Read value
      */
