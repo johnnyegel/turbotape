@@ -1,9 +1,9 @@
-package net.thebigrock.turbotape.impl;
+package net.thebigrock.turbotape.util;
 
 import java.io.IOException;
 
 /**
- * Consumer lambda interface which handles IOExceptions
+ * Consumer lambda interface that supports IOExceptions
  * @param <T> The type the consumer accepts
  */
 public interface IOConsumer<T> {

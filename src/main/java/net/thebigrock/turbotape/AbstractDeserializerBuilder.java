@@ -18,7 +18,8 @@ public abstract class AbstractDeserializerBuilder {
      */
     public AbstractDeserializerBuilder add(Class<?> cls, Consumer<FieldWriter> handler) {
         if (_writerClassMap.containsKey(cls)) {
-            throw new IllegalArgumentException("Class [" + cls + "] is already registered for handling");
+            Consumer<FieldWriter> currentHandler = _writerClassMap.get(cls);
+            throw new IllegalArgumentException("Class [" + cls + "] is already handled by: " + currentHandler);
         }
         _writerClassMap.put(cls, handler);
         return this;

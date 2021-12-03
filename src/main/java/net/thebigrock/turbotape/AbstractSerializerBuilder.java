@@ -18,7 +18,8 @@ public abstract class AbstractSerializerBuilder {
      */
     public AbstractSerializerBuilder add(Class<?> cls, ObjectWriter handler) {
         if (classSerializerMap.containsKey(cls)) {
-            throw new IllegalArgumentException("Class [" + cls + "] is already registered for handling");
+            ObjectWriter currentHandler = classSerializerMap.get(cls);
+            throw new IllegalArgumentException("Class [" + cls + "] is already handled by: " + currentHandler);
         }
         classSerializerMap.put(cls, handler);
         return this;
