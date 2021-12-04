@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static com.google.common.truth.Truth.assertThat;
+
 public class FieldStreamV1SerializerTest {
 
     public static class TestClass1 {
@@ -27,11 +29,11 @@ public class FieldStreamV1SerializerTest {
         }
 
         public static void serialize(FieldWriter writer, TestClass1 obj) {
-            writer.write(obj.b).as("bool");
-            writer.write(obj.i).as("int");
-            writer.write(obj.l).as("long");
-            writer.write(obj.f).as("float");
-            writer.write(obj.d).as("double");
+            writer.write(obj.b).as("bbbb");
+            writer.write(obj.i).as("iii");
+            writer.write(obj.l).as("llll");
+            writer.write(obj.f).as("fff");
+            writer.write(obj.d).as("ddd");
             writer.write(obj.str).as("str");
         }
     }
@@ -40,20 +42,28 @@ public class FieldStreamV1SerializerTest {
     public void test_simple_serialization() throws IOException {
 
         // :: Arrange
+
         FieldStreamV1SerializerBuilder serBuilder = new FieldStreamV1SerializerBuilder();
         serBuilder.add("c1", TestClass1.class, TestClass1::serialize);
         Serializer serializer = serBuilder.build();
 
-        TestClass1 test = new TestClass1(true, 3, 100, 0.1f, 0.2d, "yoyoyo");
+        TestClass1 test1 = new TestClass1(true, 3, 100, 0.1f, 0.2d, "yoyoyo");
+        TestClass1 test2 = new TestClass1(false, 123443, Long.MAX_VALUE, Float.MAX_VALUE, 0.2d, "yoy111");
+        TestClass1 test3 = new TestClass1(true, -125153, Long.MIN_VALUE, -1.0f, Double.MIN_VALUE, "yoy2222");
 
         // :: Act
 
-        byte[] bytes = serializer.serialize(test);
+        byte[] bytes1 = serializer.serialize(test1);
+        byte[] bytes2 = serializer.serialize(test2);
+        byte[] bytes3 = serializer.serialize(test3);
 
         // :: Assert
 
-        System.out.println(HexViewFormatter.format(bytes));
+        assertThat(bytes1.length).isEqualTo(86);
+        assertThat(bytes2.length).isEqualTo(86);
+        assertThat(bytes3.length).isEqualTo(87);
 
+        System.out.println(HexViewFormatter.format(bytes3));
 
     }
 

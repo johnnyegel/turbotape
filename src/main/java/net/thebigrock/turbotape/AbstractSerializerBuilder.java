@@ -74,5 +74,4 @@ public abstract class AbstractSerializerBuilder {
      * @return The resulting object serializer
      */
     public abstract Serializer build();
-
 }
