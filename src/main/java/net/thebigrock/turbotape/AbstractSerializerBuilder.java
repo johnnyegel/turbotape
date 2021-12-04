@@ -9,16 +9,16 @@ import java.util.Map;
  */
 public abstract class AbstractSerializerBuilder {
     private final Map<String, String> classAliasMap = new HashMap<>();
-    protected final Map<Class<?>, ClassAlias> classSerializerMap = new HashMap<>();
+    protected final Map<Class<?>, ClassAlias<?>> classSerializerMap = new HashMap<>();
 
     /**
      * Keeps the class alias and writer
      */
-    public static class ClassAlias {
+    public static class ClassAlias<T> {
         private final String alias;
-        private final ObjectWriter<?> objectWriter;
+        private final ObjectWriter<T> objectWriter;
 
-        private ClassAlias(String name, ObjectWriter<?> objectWriter) {
+        private ClassAlias(String name, ObjectWriter<T> objectWriter) {
             this.alias = name;
             this.objectWriter = objectWriter;
         }
@@ -27,10 +27,9 @@ public abstract class AbstractSerializerBuilder {
             return this.alias;
         }
 
-        public <T> ObjectWriter<T> writer() {
-            return (ObjectWriter<T>)this.objectWriter;
+        public ObjectWriter<T> writer() {
+            return this.objectWriter;
         }
-
     }
 
     /**
@@ -66,7 +65,7 @@ public abstract class AbstractSerializerBuilder {
                     + classAliasMap.get(alias));
         }
         classAliasMap.put(alias, cls.getName());
-        classSerializerMap.put(cls, new ClassAlias(alias, handler));
+        classSerializerMap.put(cls, new ClassAlias<>(alias, handler));
         return this;
     }
 
