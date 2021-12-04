@@ -1,7 +1,7 @@
 package net.thebigrock.turbotape.v1;
 
+import net.thebigrock.turbotape.AbstractSerializerBuilder;
 import net.thebigrock.turbotape.FieldWriter;
-import net.thebigrock.turbotape.ObjectWriter;
 import net.thebigrock.turbotape.util.IOConsumer;
 import net.thebigrock.turbotape.util.IndexAllocator;
 
@@ -9,20 +9,20 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.*;
 
-public class FieldStreamV1ObjectWriter extends FieldStreamProtocolV1 {
+public class FieldStreamV1ObjectWriter<T> extends FieldStreamProtocolV1 {
     private final Context _context;
-    private final Object _object;
-    private final Queue<FieldStreamV1ObjectWriter> _objectFifo = new LinkedList<>();
+    private final T _object;
+    private final Queue<FieldStreamV1ObjectWriter<?>> _objectFifo = new LinkedList<>();
 
     /**
      * Context object containing the class
      */
     private static class Context {
-        private final Map<Class<?>, ObjectWriter> _classMap;
+        private final Map<Class<?>, AbstractSerializerBuilder.ClassAlias> _classMap;
         private final IndexAllocator _fieldAllocator = new IndexAllocator(1 << (16 - TYPE_FLAG_SIZE));
         private final IndexAllocator _objectAllocator = new IndexAllocator(1 << 16);
 
-        private Context(Map<Class<?>, ObjectWriter> writerClassMap) {
+        private Context(Map<Class<?>, AbstractSerializerBuilder.ClassAlias> writerClassMap) {
             this._classMap = writerClassMap;
         }
     }
@@ -92,9 +92,8 @@ public class FieldStreamV1ObjectWriter extends FieldStreamProtocolV1 {
      * Creates the initial object writer, initializing a context from thw writer class map
      * @param writerClassMap The writer class map to use
      * @param object The initial object to serialize
-     * @param <T> The object type being serialized
      */
-    <T> FieldStreamV1ObjectWriter(Map<Class<?>, ObjectWriter> writerClassMap, T object) {
+    FieldStreamV1ObjectWriter(Map<Class<?>, AbstractSerializerBuilder.ClassAlias> writerClassMap, T object) {
         this(new Context(writerClassMap), object);
     }
 
@@ -103,7 +102,7 @@ public class FieldStreamV1ObjectWriter extends FieldStreamProtocolV1 {
      * @param context The writer context
      * @param object The object to write
      */
-    private <T> FieldStreamV1ObjectWriter(Context context, T object) {
+    private FieldStreamV1ObjectWriter(Context context, T object) {
         this._context = context;
         this._object = object;
     }
@@ -114,12 +113,13 @@ public class FieldStreamV1ObjectWriter extends FieldStreamProtocolV1 {
      * @throws IOException If an IO exception occurs
      */
     void write(DataOutput out) throws IOException {
-        // Allocate object type index
-        IndexAllocator.Index index = _context._objectAllocator.allocate(_object.getClass().getName());
-
         // Get the class writer
-        ObjectWriter classWriter = _context._classMap.get(out.getClass());
-        if (classWriter == null) throw new IllegalStateException("Class ");
+        AbstractSerializerBuilder.ClassAlias classAlias = _context._classMap.get(_object.getClass());
+        if (classAlias == null) throw new IllegalStateException("Class [" + _object.getClass().getName()
+                + "] does not have a registered serialization handler");
+
+        // Allocate object type index
+        IndexAllocator.Index index = _context._objectAllocator.allocate(classAlias.alias());
 
         // Write the index and potentially the typename
         out.writeShort(index.index());
@@ -127,7 +127,7 @@ public class FieldStreamV1ObjectWriter extends FieldStreamProtocolV1 {
 
         // Execute the class writer to retrieve the object fields
         Writer writer = new Writer();
-        classWriter.writeObject(writer, this._object);
+        classAlias.writer().writeObject(writer, _object);
 
         // Write the data
         writer.writeData(out);

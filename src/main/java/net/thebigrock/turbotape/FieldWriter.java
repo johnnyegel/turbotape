@@ -32,7 +32,7 @@ public interface FieldWriter {
      * @param value The value
      * @return Allocator for the field
      */
-    Allocator write(int value) throws IOException;
+    Allocator write(int value);
 
     /**
      * Write a long value
