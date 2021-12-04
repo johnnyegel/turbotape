@@ -64,37 +64,41 @@ public interface FieldWriter {
 
     /**
      * Writes the specific object to the serializer
+     * @param cls The class of the object to write
      * @param object The object to write
      * @param <T> The objects type
      * @return Allocator used to specify a location of the field
      */
-    <T> Allocator write(T object);
+    <T> Allocator write(Class<T> cls, T object);
 
     /**
      * Writes a field consisting of an Iterator of objects
+     * @param cls The class provided by the iterator
      * @param objects The object stream to write
      * @param <T> The type of objects in the stream
      * @return FieldAllocator to allocate a name to the field
      */
-    <T> Allocator write(Iterator<T> objects);
+    <T> Allocator write(Class<T> cls, Iterator<T> objects);
 
     /**
      * Writes a field consisting of a stream of objects
+     * @param cls The class provided by the stream
      * @param objects The object stream to write
      * @param <T> The type of objects in the stream
      * @return FieldAllocator to allocate a name to the field
      */
-    default <T> Allocator write(Stream<T> objects) {
-        return write(objects.iterator());
+    default <T> Allocator write(Class<T> cls, Stream<T> objects) {
+        return write(cls, objects.iterator());
     }
 
     /**
      * Writes a field consisting of an Iterable of objects
+     * @param cls The class provided by the iterator
      * @param objects The object stream to write
      * @param <T> The type of objects in the stream
      * @return FieldAllocator to allocate a name to the field
      */
-    default <T> Allocator write(Iterable<T> objects) {
-        return write(objects.iterator());
+    default <T> Allocator write(Class<T> cls, Iterable<T> objects) {
+        return write(cls, objects.iterator());
     }
 }

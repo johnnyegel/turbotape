@@ -3,7 +3,7 @@ package net.thebigrock.turbotape.v1;
 /**
  * Class containing common functionality for the FieldStreamProtocol V1
  */
-public class FieldStreamProtocolV1 {
+public class TurboTapeV1Protocol {
     // The header found at the very beginning of the stream
     static final String PROTOCOL_HEADER = "FSP1";
 

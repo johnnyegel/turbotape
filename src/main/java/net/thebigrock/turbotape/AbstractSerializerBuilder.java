@@ -16,9 +16,9 @@ public abstract class AbstractSerializerBuilder {
      */
     public static class ClassAlias<T> {
         private final String alias;
-        private final ObjectWriter<T> objectWriter;
+        private final ObjectWriteHandler<T> objectWriter;
 
-        private ClassAlias(String name, ObjectWriter<T> objectWriter) {
+        private ClassAlias(String name, ObjectWriteHandler<T> objectWriter) {
             this.alias = name;
             this.objectWriter = objectWriter;
         }
@@ -27,7 +27,7 @@ public abstract class AbstractSerializerBuilder {
             return this.alias;
         }
 
-        public ObjectWriter<T> writer() {
+        public ObjectWriteHandler<T> writer() {
             return this.objectWriter;
         }
     }
@@ -40,7 +40,7 @@ public abstract class AbstractSerializerBuilder {
      * @param <T> The type of the object being serialized
      * @return This Serialization builder for cascading
      */
-    public <T> AbstractSerializerBuilder add(Class<T> cls, ObjectWriter<T> handler) {
+    public <T> AbstractSerializerBuilder add(Class<T> cls, ObjectWriteHandler<T> handler) {
         return add(cls.getName(), cls, handler);
     }
 
@@ -55,7 +55,7 @@ public abstract class AbstractSerializerBuilder {
      * @param <T> The type of the object being serialized
      * @return This Serialization builder for cascading
      */
-    public <T> AbstractSerializerBuilder add(String alias, Class<T> cls, ObjectWriter<T> handler) {
+    public <T> AbstractSerializerBuilder add(String alias, Class<T> cls, ObjectWriteHandler<T> handler) {
         if (classSerializerMap.containsKey(cls)) {
             throw new IllegalArgumentException("Class [" + cls + "] is already handled by: "
                     + classSerializerMap.get(cls));

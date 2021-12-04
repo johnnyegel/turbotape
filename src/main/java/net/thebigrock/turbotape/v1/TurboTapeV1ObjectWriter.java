@@ -1,7 +1,8 @@
 package net.thebigrock.turbotape.v1;
 
-import net.thebigrock.turbotape.AbstractSerializerBuilder;
 import net.thebigrock.turbotape.FieldWriter;
+import net.thebigrock.turbotape.ObjectWriteHandler;
+import net.thebigrock.turbotape.ObjectWriteHandlerProvider;
 import net.thebigrock.turbotape.util.IOConsumer;
 import net.thebigrock.turbotape.util.IndexAllocator;
 
@@ -9,28 +10,84 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.*;
 
-public class FieldStreamV1ObjectWriter<T> extends FieldStreamProtocolV1 {
+public class TurboTapeV1ObjectWriter<T> extends TurboTapeV1Protocol {
+    private final Queue<TurboTapeV1ObjectWriter<?>> _objectFifo = new LinkedList<>();
     private final Context _context;
+    private final Class<T> _class;
     private final T _object;
-    private final Queue<FieldStreamV1ObjectWriter<?>> _objectFifo = new LinkedList<>();
+
+    /**
+     * Creates the initial object writer, initializing a context from thw writer class map
+     * @param writerProvider The writer provider to use to resolve object writer
+     * @param object The initial object to serialize
+     */
+    TurboTapeV1ObjectWriter(ObjectWriteHandlerProvider writerProvider, Class<T> cls, T object) {
+        this(new Context(writerProvider), cls, object);
+    }
+
+    /**
+     * Creates a writer for a given object
+     * @param context The writer context
+     * @param object The object to write
+     */
+    private TurboTapeV1ObjectWriter(Context context, Class<T> cls, T object) {
+        this._context = context;
+        this._object = object;
+        this._class = cls;
+    }
+
+    /**
+     * Writes the fields to the Data Output
+     * @param out The Data Output to write to
+     * @throws IOException If an IO exception occurs
+     */
+    void write(DataOutput out) throws IOException {
+        // Get the class writer
+        String objectAlias = _context._writerProvider.getAlias(_object.getClass());
+
+        // Allocate object type index
+        IndexAllocator.Index index = _context._objectAllocator.allocate(objectAlias);
+
+        // Write the index and potentially the typename
+        out.writeShort(index.index());
+        index.write(out::writeUTF);
+
+        // Execute the class writer to retrieve the object fields
+        FieldWriterImpl fieldWriter = new FieldWriterImpl();
+        ObjectWriteHandler<T> objectWriter = _context._writerProvider.getWriter(_class);
+        objectWriter.writeObject(fieldWriter, _object);
+
+        // Write the data
+        fieldWriter.writeData(out);
+
+        // Then iterate the sub-objects, and write
+        while (!_objectFifo.isEmpty()) {
+            TurboTapeV1ObjectWriter<?> subObjectWriter = _objectFifo.remove();
+            subObjectWriter.write(out);
+        }
+    }
+
+    private static <O> void writeObjectHelper(FieldWriter fieldWriter, ObjectWriteHandler<O> objectWriter, O obj) {
+        objectWriter.writeObject(fieldWriter, obj);
+    }
 
     /**
      * Context object containing the class
      */
     private static class Context {
-        private final Map<Class<?>, AbstractSerializerBuilder.ClassAlias> _classMap;
+        private final ObjectWriteHandlerProvider _writerProvider;
         private final IndexAllocator _fieldAllocator = new IndexAllocator(1 << (16 - TYPE_FLAG_SIZE));
         private final IndexAllocator _objectAllocator = new IndexAllocator(1 << 16);
 
-        private Context(Map<Class<?>, AbstractSerializerBuilder.ClassAlias> writerClassMap) {
-            this._classMap = writerClassMap;
+        private Context(ObjectWriteHandlerProvider writerProvider) {
+            this._writerProvider = writerProvider;
         }
     }
 
     /**
      * Writer which is passed to serialization methods
      */
-    private class Writer implements FieldWriter {
+    private class FieldWriterImpl implements FieldWriter {
         private final Queue<FieldEntry> _fieldFifo = new LinkedList<>();
 
         @Override
@@ -64,14 +121,14 @@ public class FieldStreamV1ObjectWriter<T> extends FieldStreamProtocolV1 {
         }
 
         @Override
-        public <T> Allocator write(T object) {
+        public <T> Allocator write(Class<T> cls, T object) {
             Allocator objectAllocator = add(new FieldEntry(TYPE_FLAG_REF_OBJECT));
-            _objectFifo.add(new FieldStreamV1ObjectWriter(_context, object));
+            _objectFifo.add(new TurboTapeV1ObjectWriter<T>(_context, cls, object));
             return objectAllocator;
         }
 
         @Override
-        public <T> Allocator write(Iterator<T> objects) {
+        public <T> Allocator write(Class<T> cls, Iterator<T> objects) {
             throw new UnsupportedOperationException("NOT IMPLEMENTED");
         }
 
@@ -85,57 +142,6 @@ public class FieldStreamV1ObjectWriter<T> extends FieldStreamProtocolV1 {
                 FieldEntry field = _fieldFifo.remove();
                 field.write(out);
             }
-        }
-    }
-
-    /**
-     * Creates the initial object writer, initializing a context from thw writer class map
-     * @param writerClassMap The writer class map to use
-     * @param object The initial object to serialize
-     */
-    FieldStreamV1ObjectWriter(Map<Class<?>, AbstractSerializerBuilder.ClassAlias> writerClassMap, T object) {
-        this(new Context(writerClassMap), object);
-    }
-
-    /**
-     * Creates a writer for a given object
-     * @param context The writer context
-     * @param object The object to write
-     */
-    private FieldStreamV1ObjectWriter(Context context, T object) {
-        this._context = context;
-        this._object = object;
-    }
-
-    /**
-     * Writes the fields to the Data Output
-     * @param out The Data Output to write to
-     * @throws IOException If an IO exception occurs
-     */
-    void write(DataOutput out) throws IOException {
-        // Get the class writer
-        AbstractSerializerBuilder.ClassAlias classAlias = _context._classMap.get(_object.getClass());
-        if (classAlias == null) throw new IllegalStateException("Class [" + _object.getClass().getName()
-                + "] does not have a registered serialization handler");
-
-        // Allocate object type index
-        IndexAllocator.Index index = _context._objectAllocator.allocate(classAlias.alias());
-
-        // Write the index and potentially the typename
-        out.writeShort(index.index());
-        index.write(out::writeUTF);
-
-        // Execute the class writer to retrieve the object fields
-        Writer writer = new Writer();
-        classAlias.writer().writeObject(writer, _object);
-
-        // Write the data
-        writer.writeData(out);
-
-        // Then iterate the sub-objects, and write
-        while (!_objectFifo.isEmpty()) {
-            FieldStreamV1ObjectWriter subObjectWriter = _objectFifo.remove();
-            subObjectWriter.write(out);
         }
     }
 

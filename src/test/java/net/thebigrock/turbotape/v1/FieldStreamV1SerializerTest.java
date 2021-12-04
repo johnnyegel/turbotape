@@ -1,6 +1,7 @@
 package net.thebigrock.turbotape.v1;
 
 import net.thebigrock.turbotape.FieldWriter;
+import net.thebigrock.turbotape.ObjectWriteHandlerProviderBuilder;
 import net.thebigrock.turbotape.Serializer;
 import net.thebigrock.turbotape.v1.util.HexViewFormatter;
 import org.junit.jupiter.api.Test;
@@ -43,9 +44,9 @@ public class FieldStreamV1SerializerTest {
 
         // :: Arrange
 
-        FieldStreamV1SerializerBuilder serBuilder = new FieldStreamV1SerializerBuilder();
-        serBuilder.add("c1", TestClass1.class, TestClass1::serialize);
-        Serializer serializer = serBuilder.build();
+        Serializer serializer = new TurboTapeV1Serializer(ObjectWriteHandlerProviderBuilder.create()
+                .add("c1", TestClass1.class, TestClass1::serialize)
+                .build());
 
         TestClass1 test1 = new TestClass1(true, 3, 100, 0.1f, 0.2d, "yoyoyo");
         TestClass1 test2 = new TestClass1(false, 123443, Long.MAX_VALUE, Float.MAX_VALUE, 0.2d, "yoy111");
@@ -53,9 +54,9 @@ public class FieldStreamV1SerializerTest {
 
         // :: Act
 
-        byte[] bytes1 = serializer.serialize(test1);
-        byte[] bytes2 = serializer.serialize(test2);
-        byte[] bytes3 = serializer.serialize(test3);
+        byte[] bytes1 = serializer.serialize(TestClass1.class, test1);
+        byte[] bytes2 = serializer.serialize(TestClass1.class, test2);
+        byte[] bytes3 = serializer.serialize(TestClass1.class, test3);
 
         // :: Assert
 
