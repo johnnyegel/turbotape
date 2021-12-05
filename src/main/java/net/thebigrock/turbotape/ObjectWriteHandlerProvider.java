@@ -2,7 +2,7 @@ package net.thebigrock.turbotape;
 
 /**
  * Provides Object Write Handlers for specified objects classes.
- * The Write handlers in turn are used for serializing objects of that type.
+ * The handlers in turn are used for serializing objects of that type.
  */
 public interface ObjectWriteHandlerProvider {
 
@@ -14,7 +14,7 @@ public interface ObjectWriteHandlerProvider {
      * @return The ObjectWriter for the specified class
      * @throws IllegalStateException if class is not supported by provider
      */
-    <T> ObjectWriteHandler<T> getWriter(Class<T> cls);
+    <T> ObjectWriteHandler<T> getWriteHandler(Class<?> cls);
 
     /**
      * Returns alias used to represent the class by the serializer.
@@ -26,5 +26,5 @@ public interface ObjectWriteHandlerProvider {
      * @return The registered alias for the given class (or it's class name)
      * @throws IllegalStateException if class is not supported by provider
      */
-    <T> String getAlias(Class<T> cls);
+    String getAlias(Class<?> cls);
 }

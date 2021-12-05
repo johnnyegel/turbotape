@@ -13,7 +13,6 @@ import java.util.*;
 public class TurboTapeV1ObjectWriter<T> extends TurboTapeV1Protocol {
     private final Queue<TurboTapeV1ObjectWriter<?>> _objectFifo = new LinkedList<>();
     private final Context _context;
-    private final Class<T> _class;
     private final T _object;
 
     /**
@@ -21,8 +20,8 @@ public class TurboTapeV1ObjectWriter<T> extends TurboTapeV1Protocol {
      * @param writerProvider The writer provider to use to resolve object writer
      * @param object The initial object to serialize
      */
-    TurboTapeV1ObjectWriter(ObjectWriteHandlerProvider writerProvider, Class<T> cls, T object) {
-        this(new Context(writerProvider), cls, object);
+    TurboTapeV1ObjectWriter(ObjectWriteHandlerProvider writerProvider, T object) {
+        this(new Context(writerProvider), object);
     }
 
     /**
@@ -30,10 +29,9 @@ public class TurboTapeV1ObjectWriter<T> extends TurboTapeV1Protocol {
      * @param context The writer context
      * @param object The object to write
      */
-    private TurboTapeV1ObjectWriter(Context context, Class<T> cls, T object) {
+    private TurboTapeV1ObjectWriter(Context context, T object) {
         this._context = context;
         this._object = object;
-        this._class = cls;
     }
 
     /**
@@ -54,8 +52,8 @@ public class TurboTapeV1ObjectWriter<T> extends TurboTapeV1Protocol {
 
         // Execute the class writer to retrieve the object fields
         FieldWriterImpl fieldWriter = new FieldWriterImpl();
-        ObjectWriteHandler<T> objectWriter = _context._writerProvider.getWriter(_class);
-        objectWriter.writeObject(fieldWriter, _object);
+        ObjectWriteHandler<T> objectWriter = _context._writerProvider.getWriteHandler(_object.getClass());
+        objectWriter.process(fieldWriter, _object);
 
         // Write the data
         fieldWriter.writeData(out);
@@ -67,9 +65,6 @@ public class TurboTapeV1ObjectWriter<T> extends TurboTapeV1Protocol {
         }
     }
 
-    private static <O> void writeObjectHelper(FieldWriter fieldWriter, ObjectWriteHandler<O> objectWriter, O obj) {
-        objectWriter.writeObject(fieldWriter, obj);
-    }
 
     /**
      * Context object containing the class
@@ -121,14 +116,14 @@ public class TurboTapeV1ObjectWriter<T> extends TurboTapeV1Protocol {
         }
 
         @Override
-        public <T> Allocator write(Class<T> cls, T object) {
+        public <T> Allocator write(T object) {
             Allocator objectAllocator = add(new FieldEntry(TYPE_FLAG_REF_OBJECT));
-            _objectFifo.add(new TurboTapeV1ObjectWriter<T>(_context, cls, object));
+            _objectFifo.add(new TurboTapeV1ObjectWriter<T>(_context, object));
             return objectAllocator;
         }
 
         @Override
-        public <T> Allocator write(Class<T> cls, Iterator<T> objects) {
+        public <T> Allocator write(Iterator<T> objects) {
             throw new UnsupportedOperationException("NOT IMPLEMENTED");
         }
 

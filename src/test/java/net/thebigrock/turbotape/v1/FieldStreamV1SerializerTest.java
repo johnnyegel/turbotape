@@ -54,9 +54,9 @@ public class FieldStreamV1SerializerTest {
 
         // :: Act
 
-        byte[] bytes1 = serializer.serialize(TestClass1.class, test1);
-        byte[] bytes2 = serializer.serialize(TestClass1.class, test2);
-        byte[] bytes3 = serializer.serialize(TestClass1.class, test3);
+        byte[] bytes1 = serializer.serialize(test1);
+        byte[] bytes2 = serializer.serialize(test2);
+        byte[] bytes3 = serializer.serialize(test3);
 
         // :: Assert
 

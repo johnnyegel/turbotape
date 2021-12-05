@@ -67,7 +67,7 @@ public class IndexAllocator {
 
         /**
          * Calls the consumer if the index was newly allocated.
-         * If not the call is ignored.
+         * If not, the call is ignored.
          * @param consumer The consumer called with the string
          */
         void write(IOConsumer<String> consumer) throws IOException;

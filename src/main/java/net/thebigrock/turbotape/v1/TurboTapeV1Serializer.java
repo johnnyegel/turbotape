@@ -20,8 +20,8 @@ public class TurboTapeV1Serializer implements Serializer {
     }
 
     @Override
-    public <T> void serialize(Class<T> cls, T object, OutputStream outputStream) throws IOException {
-        TurboTapeV1ObjectWriter<T> objectWriter = new TurboTapeV1ObjectWriter<>(_writerProvider, cls, object);
+    public <T> void serialize(T object, OutputStream outputStream) throws IOException {
+        TurboTapeV1ObjectWriter<T> objectWriter = new TurboTapeV1ObjectWriter<>(_writerProvider, object);
         DataOutputStream dataWriter = new DataOutputStream(outputStream);
         dataWriter.write(TurboTapeV1Protocol.PROTOCOL_HEADER.getBytes(StandardCharsets.UTF_8));
         objectWriter.write(new DataOutputStream(outputStream));

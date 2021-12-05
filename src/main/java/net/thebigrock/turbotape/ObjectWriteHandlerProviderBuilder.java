@@ -29,6 +29,10 @@ public class ObjectWriteHandlerProviderBuilder {
      * @return This ObjectWriteHandlerProviderBuilder instance for cascading
      */
     public <T> ObjectWriteHandlerProviderBuilder add(String alias, Class<T> cls, ObjectWriteHandler<T> writeHandler) {
+        if (_classEntryMap.containsKey(alias)) {
+            throw new IllegalArgumentException("Handler already exists for [" + alias + "]: "
+                    + _classEntryMap.get(alias));
+        }
         _classEntryMap.put(cls, new Entry<>(alias, writeHandler));
         return this;
     }
@@ -44,8 +48,7 @@ public class ObjectWriteHandlerProviderBuilder {
      * @return This ObjectWriteHandlerProviderBuilder instance for cascading
      */
     public <T> ObjectWriteHandlerProviderBuilder add(Class<T> cls, ObjectWriteHandler<T> writeHandler) {
-        _classEntryMap.put(cls, new Entry<>(cls.getSimpleName(), writeHandler));
-        return this;
+        return add(cls.getSimpleName(), cls, writeHandler);
     }
 
     /**
@@ -81,14 +84,17 @@ public class ObjectWriteHandlerProviderBuilder {
         }
 
         @Override
-        public <T> ObjectWriteHandler<T> getWriter(Class<T> cls) {
-            return get(cls)._writeHandler;
+        @SuppressWarnings("unchecked")  // Unchecked cast is safe, as the type match is enforced on build
+        public <T> ObjectWriteHandler<T> getWriteHandler(Class<?> cls) {
+            return (ObjectWriteHandler<T>)get(cls)._writeHandler;
         }
 
         @Override
-        public <T> String getAlias(Class<T> cls) {
+        public String getAlias(Class<?> cls) {
             return get(cls)._alias;
         }
+
+
 
         @SuppressWarnings("unchecked")  // Unchecked Cast is safe, as we enforce type match on build
         private <T> Entry<T> get(Class<T> cls) {
